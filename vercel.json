@@ -1,0 +1,1 @@
+{"$schema":"https://openapi.vercel.sh/vercel.json","buildCommand":"npm run build","functions":{"api/agent.js":{"includeFiles":"circuits/{vfy-policy.wasm,vfy-policy_final.zkey}","maxDuration":10}},"rewrites":[{"destination":"/api/agent","source":"/agent"}]}

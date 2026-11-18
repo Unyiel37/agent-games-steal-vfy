@@ -145,12 +145,15 @@ async function handleAgent(req: IncomingMessage, res: ServerResponse): Promise<v
   }
 
   if (envelope.type !== "agent-games.steal-the-vfy.v1") {
+    console.error(`[agent] unknown_envelope_type type=${String(envelope.type)} keys=${Object.keys(envelope).join(",")}`);
     sendJson(res, 400, { error: "unknown_envelope_type" });
     return;
   }
 
   const state = parseTurnEnvelope(envelope);
   if (!state) {
+    const innerDbg = (envelope.input as Record<string, unknown> | undefined) ?? (envelope.gameState as Record<string, unknown> | undefined) ?? envelope;
+console.error(`[agent] missing_turn_state keys=${Object.keys(innerDbg).join(",")} matchId=${typeof (innerDbg.matchId ?? envelope.matchId)} turn=${typeof (innerDbg.turn ?? innerDbg.turnNumber)} self=${typeof (innerDbg.selfBalance ?? innerDbg.myBalance)} opp=${typeof innerDbg.opponentBalance} commitment=${typeof innerDbg.commitment}`);
     sendJson(res, 400, { error: "missing_turn_state" });
     return;
   }

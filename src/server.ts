@@ -41,6 +41,7 @@ import { parseTurnEnvelope, asString } from "./envelope.js";
 import { generatePolicyProof, CIRCUIT_VERSION } from "./proof.js";
 import {
   commitmentToField,
+  commitmentToHex,
   loadStrategyConfig,
   type StrategyConfig,
 } from "./policy.js";
@@ -143,8 +144,8 @@ async function handleAgent(req: IncomingMessage, res: ServerResponse): Promise<v
     sendJson(res, 200, { ok: true, protocolVersion: "v1" });
     return;
   }
-
-  if (envelope.type !== "agent-games.steal-the-vfy.v1") {
+// Real platform turn envelopes carry NO `type` field (verified from the practice payload log 2026-11-18); only reject a type that is present and unknown. Preflight (which does carry a type) is handled above.
+  if (envelope.type !== undefined && envelope.type !== "agent-games.steal-the-vfy.v1") {
     console.error(`[agent] unknown_envelope_type type=${String(envelope.type)} keys=${Object.keys(envelope).join(",")}`);
     sendJson(res, 400, { error: "unknown_envelope_type" });
     return;
@@ -177,14 +178,16 @@ console.error(`[agent] missing_turn_state keys=${Object.keys(innerDbg).join(",")
 
   // The envelope commitment must equal our registered strategy
   // commitment — otherwise the proof cannot verify (fail closed).
-  if (commitmentToField(state.commitment) !== STRATEGY.commitment) {
+  // Practice envelopes omit the commitment: fall back to the registered one (the proof is bound to it anyway) and normalize the state so proof generation uses the registered commitment.
+  const commitmentHex = state.commitment || commitmentToHex(STRATEGY.commitment);
+  if (commitmentToField(commitmentHex) !== STRATEGY.commitment) {
     console.error(
       `[turn ${state.matchId}:${state.turn}] envelope commitment does not match registered strategy commitment`,
     );
     sendTurn(res, idempotencyKey, holdResponse(state.matchId, state.turn));
     return;
   }
-
+state.commitment = commitmentHex;
   // Track history for opponent-pattern inference (best effort).
   const history = matchHistory.get(state.matchId) ?? [];
   const decision = decideTurn(state, history, STRATEGY);

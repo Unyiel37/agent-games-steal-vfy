@@ -249,6 +249,7 @@ export const server = createServer((req, res) => {
   res.writeHead(404, { "content-type": "application/json" });
   res.end(JSON.stringify({ error: "not_found" }));
 });
+export default server;
 
 // Only listen when run directly (node dist/server.js). Importing this
 // module (e.g. from the Vercel function via envelope.js) must NOT

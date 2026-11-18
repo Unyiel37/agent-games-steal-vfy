@@ -9,7 +9,6 @@
  * parser tolerates the field-name variants seen in the public docs
  * and skeleton code.
  */
-
 import type { TurnState } from "./strategy.js";
 
 export function asNumber(value: unknown): number | undefined {
@@ -31,8 +30,8 @@ export function parseTurnEnvelope(
   const inner =
     (envelope.input as Record<string, unknown> | undefined) ??
     (envelope.gameState as Record<string, unknown> | undefined) ??
+    (envelope.state as Record<string, unknown> | undefined) ??
     envelope;
-
   const matchId =
     asString(inner.matchId) ??
     asString(inner.match_id) ??
@@ -48,7 +47,6 @@ export function parseTurnEnvelope(
     asNumber(inner.self_balance);
   const opponentBalance =
     asNumber(inner.opponentBalance) ?? asNumber(inner.opponent_balance);
-
   // The frozen strategy-commitment hash: a hex string, or an object
   // { hash: "0x..." } (the registration format).
   const commitmentRaw =
@@ -62,15 +60,14 @@ export function parseTurnEnvelope(
   ) {
     commitment = (commitmentRaw as Record<string, string>).hash;
   }
-
   if (
     matchId === undefined ||
     turn === undefined ||
     selfBalance === undefined ||
-    opponentBalance === undefined ||
-    commitment === undefined
+    opponentBalance === undefined
   ) {
     return null;
   }
-  return { matchId, turn, selfBalance, opponentBalance, commitment };
+  // Commitment boleh absen (payload practice tidak membawanya); caller memakai commitment registered. String kosong menandai "absen".
+  return { matchId, turn, selfBalance, opponentBalance, commitment: commitment ?? "" };
 }
